@@ -1,0 +1,108 @@
+--creating Table--
+CREATE TABLE political_survey (
+    participant_id SERIAL PRIMARY KEY,
+    willing_to_vote BOOLEAN,
+    age_group VARCHAR(50),
+    gender VARCHAR(20),
+    education VARCHAR(100),
+    occupation VARCHAR(100),
+    district VARCHAR(100),
+    constituency VARCHAR(100),
+    volunteer_experience BOOLEAN,
+    rating_2019_2024 INTEGER,
+    vote_party VARCHAR(100),
+    development_need VARCHAR(255)
+);
+--Import Data--
+COPY political_survey FROM 'H:\Data Analyst\SQL\2024_survey.csv' CSV HEADER;
+
+
+SELECT REPLACE(vote_party, 'CPM', 'CPM+CPI') AS updated_party_name
+FROM political_survey;
+
+--Select data--
+select * from political_survey;
+
+--Count the number of participants in the survey.--
+SELECT COUNT(*) AS total_participants FROM political_survey;
+
+--Find the percentage of participants who are willing to vote in the 2024 Andhra Pradesh election.--
+SELECT 
+    COUNT(*) AS total_participants,
+    (COUNT(*) FILTER (WHERE willing_to_vote = TRUE) * 100.0 / COUNT(*)) AS percentage_willing_to_vote
+FROM political_survey;
+
+--Retrieve the average rating given by participants for the period 2019-2024.--
+SELECT AVG(rating_2019_2024) AS average_rating FROM political_survey;
+
+--Identify the all occupation among participants.--
+SELECT occupation, COUNT(*) AS occupation_count
+FROM political_survey
+GROUP BY occupation
+ORDER BY occupation_count;
+
+--Identify the most common occupation among participants.--
+SELECT occupation, COUNT(*) AS occupation_count
+FROM political_survey
+GROUP BY occupation
+ORDER BY occupation_count desc
+limit 1;
+
+--Identify the least common occupation among participants.--
+SELECT occupation, COUNT(*) AS occupation_count
+FROM political_survey
+GROUP BY occupation
+ORDER BY occupation_count
+limit 1;
+
+--List the top three development needs identified by participants.--
+SELECT development_need, COUNT(*) AS need_count
+FROM political_survey
+GROUP BY development_need
+ORDER BY need_count DESC
+LIMIT 3;
+
+
+--Find the distribution of participants by age group.--
+SELECT age_group, COUNT(*) AS age_group_count
+FROM political_survey
+GROUP BY age_group
+ORDER BY age_group;
+
+--Calculate the average rating given by participants in each district--
+SELECT district, AVG(rating_2019_2024) AS average_rating
+FROM political_survey
+GROUP BY district;
+
+--Retrieve the number of participants from each constituency.--
+SELECT constituency, COUNT(*) AS participants_count
+FROM political_survey
+GROUP BY constituency
+ORDER BY constituency;
+
+--Identify the political party with the highest support among participants--
+SELECT vote_party, COUNT(*) AS party_support
+FROM political_survey
+GROUP BY vote_party
+ORDER BY party_support;
+
+--List the participants who have volunteered for political campaigns or election-related activities.--
+SELECT * 
+FROM political_survey
+WHERE volunteer_experience = TRUE;
+
+--How many district which party can win--
+SELECT vote_party, COUNT(DISTINCT district) AS districts_won
+FROM (
+    SELECT district, vote_party, 
+           ROW_NUMBER() OVER (PARTITION BY district ORDER BY COUNT(*) DESC) AS party_rank
+    FROM political_survey
+    GROUP BY district, vote_party
+) ranked_parties
+WHERE party_rank = 1
+GROUP BY vote_party;
+
+--How many constituency which party can win--
+SELECT vote_party, COUNT(DISTINCT constituency) AS num_constituencies_won
+FROM political_survey
+GROUP BY vote_party;
